@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 
 const ScribeAIWidget = ({ formId, apiUrl = '/api/chat', theme = 'default' }) => {
   const [messages, setMessages] = useState([]);
@@ -11,6 +12,7 @@ const ScribeAIWidget = ({ formId, apiUrl = '/api/chat', theme = 'default' }) => 
   const [userResponses, setUserResponses] = useState({});
   const [isVisible, setIsVisible] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
@@ -22,12 +24,17 @@ const ScribeAIWidget = ({ formId, apiUrl = '/api/chat', theme = 'default' }) => 
     }
   }, [messages]);
 
+  // Ensure component is mounted before rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Initialize widget when component mounts
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && isMounted) {
       initializeWidget();
     }
-  }, [isInitialized]);
+  }, [isInitialized, isMounted]);
 
   const initializeWidget = () => {
     const form = document.getElementById(formId);
@@ -198,8 +205,8 @@ REGRAS:
     setIsVisible(!isVisible);
   };
 
-  if (!isInitialized) {
-    return null; // Don't render until initialized
+  if (!isMounted || !isInitialized) {
+    return null; // Don't render until mounted and initialized
   }
 
   return (

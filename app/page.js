@@ -1,5 +1,4 @@
 // app/page.js
-import ScribeAIWidget from '../components/ScribeAIWidget';
 import React from 'react';
 
 export default function Home() {
@@ -27,9 +26,7 @@ export default function Home() {
         {/* <button type="submit">Enviar Formulário Manualmente</button> */}
       </form>
 
-      {/* Render the ScribeAIWidget component here */}
-       <ScribeAIWidget formId="sampleForm" />
-
+      {/* ScribeAI widget will be automatically injected by the CDN script */}
     </div>
   );
 }

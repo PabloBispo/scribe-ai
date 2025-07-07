@@ -28,13 +28,36 @@
         forms = this.detectForms();
       }
       
+      console.log('ScribeAI: Found', forms.length, 'form containers');
+      
       forms.forEach((form, index) => {
+        console.log('ScribeAI: Creating widget for form', index, form);
         this.createWidget(form, apiUrl, theme, index);
       });
     },
 
     detectForms: function() {
       const allForms = Array.from(document.querySelectorAll('form'));
+      
+      // If no forms found, try to detect fieldsets or containers with multiple inputs
+      if (allForms.length === 0) {
+        const containers = Array.from(document.querySelectorAll('fieldset, div[class*="form"], div[class*="step"], div[class*="card"]'));
+        
+        for (const container of containers) {
+          const fields = this.getFormFields(container);
+          if (fields.length >= 2) {
+            allForms.push(container);
+          }
+        }
+        
+        // If still no containers found, check the whole document
+        if (allForms.length === 0) {
+          const documentFields = this.getFormFields(document.body);
+          if (documentFields.length >= 2) {
+            allForms.push(document.body);
+          }
+        }
+      }
       
       return allForms.filter(form => {
         const fields = this.getFormFields(form);
@@ -552,6 +575,7 @@ REGRAS:
 
   // Auto-initialize
   function initializeScribeAI() {
+    console.log('ScribeAI: Initializing...');
     const scripts = document.querySelectorAll('script[src*="scribe-ai.js"]');
     
     scripts.forEach(script => {

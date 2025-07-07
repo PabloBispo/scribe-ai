@@ -1,4 +1,5 @@
 import './globals.css';
+import Script from 'next/script';
 
 export const metadata = {
   title: 'Scribe AI - Assistente de Formulários',
@@ -12,7 +13,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <Script 
+          src="/scribe-ai.js" 
+          strategy="afterInteractive"
+        />
+        {children}
+      </body>
     </html>
   )
 }
