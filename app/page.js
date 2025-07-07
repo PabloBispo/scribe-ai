@@ -1,5 +1,5 @@
 // app/page.js
-import ChatWidget from '../components/ChatWidget';
+import ScribeAIWidget from '../components/ScribeAIWidget';
 import React from 'react';
 
 export default function Home() {
@@ -27,8 +27,8 @@ export default function Home() {
         {/* <button type="submit">Enviar Formulário Manualmente</button> */}
       </form>
 
-      {/* Render the ChatWidget component here */}
-       <ChatWidget formId="sampleForm" />
+      {/* Render the ScribeAIWidget component here */}
+       <ScribeAIWidget formId="sampleForm" />
 
     </div>
   );
