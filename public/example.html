@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scribe AI - Exemplo de Uso</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        button[type="submit"] {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button[type="submit"]:hover {
+            background: #0056b3;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        
+        .instructions code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .usage-examples {
+            background: #f3e5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #9c27b0;
+        }
+        
+        .usage-examples h3 {
+            margin-top: 0;
+            color: #7b1fa2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Scribe AI - Assistente de Formulários</h1>
+    
+    <div class="instructions">
+        <h3>📋 Como Usar o Scribe AI Widget</h3>
+        <p>O Scribe AI é um assistente inteligente que ajuda usuários a preencher formulários de forma conversacional. Clique no botão 🤖 no canto inferior direito para começar!</p>
+        
+        <h4>Para desenvolvedores:</h4>
+        <p>Para integrar o Scribe AI em seu site, adicione este script:</p>
+        <code>&lt;script src="https://cdn.jsdelivr.net/gh/PabloBispo/scribe-ai@master/public/scribe-ai.js" data-form-id="meuFormulario"&gt;&lt;/script&gt;</code>
+    </div>
+    
+    <div class="usage-examples">
+        <h3>💡 Exemplos de Uso</h3>
+        <p><strong>Método 1 - Data Attributes:</strong></p>
+        <code>&lt;script src="scribe-ai.js" data-form-id="meuFormulario" data-api-url="https://meu-site.com/api/chat"&gt;&lt;/script&gt;</code>
+        
+        <p><strong>Método 2 - JavaScript:</strong></p>
+        <code>ScribeAI.init({ formId: 'meuFormulario', apiUrl: 'https://meu-site.com/api/chat' });</code>
+    </div>
+    
+    <div class="container">
+        <form id="sampleForm">
+            <div class="form-group">
+                <label for="name">Nome Completo:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Telefone:</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            
+            <div class="form-group">
+                <label for="company">Empresa:</label>
+                <input type="text" id="company" name="company">
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Mensagem:</label>
+                <textarea id="message" name="message" rows="4" required></textarea>
+            </div>
+            
+            <button type="submit">Enviar Formulário</button>
+        </form>
+    </div>
+    
+    <!-- Scribe AI Widget -->
+    <script src="scribe-ai.js" data-form-id="sampleForm"></script>
+    
+    <script>
+        // Exemplo de como inicializar programaticamente
+        // ScribeAI.init({ formId: 'sampleForm', apiUrl: '/api/chat' });
+        
+        // Exemplo de como lidar com o submit do formulário
+        document.getElementById('sampleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Formulário enviado com sucesso! (Este é apenas um exemplo)');
+        });
+    </script>
+</body>
+</html> 
