@@ -6,19 +6,87 @@
   // Then call: ScribeAI.init({ formId: 'myForm', apiUrl: 'https://your-api.com/api/chat' });
 
   window.ScribeAI = {
-    init: function(config) {
-      const { formId, apiUrl = '/api/chat', theme = 'default' } = config;
+    init: function(config = {}) {
+      const { apiUrl = '/api/chat', theme = 'default', targetForm = null } = config;
       
-      if (!formId) {
-        console.error('ScribeAI: formId is required');
-        return;
-      }
-
       // Create and inject CSS
       this.injectCSS();
       
-      // Create widget
-      this.createWidget(formId, apiUrl, theme);
+      // Find and create widgets for forms
+      this.findAndCreateWidgets(apiUrl, theme, targetForm);
+    },
+
+    findAndCreateWidgets: function(apiUrl, theme, targetForm) {
+      let forms = [];
+      
+      if (targetForm) {
+        // If specific form is provided
+        const form = typeof targetForm === 'string' ? document.getElementById(targetForm) : targetForm;
+        if (form) forms = [form];
+      } else {
+        // Auto-detect forms
+        forms = this.detectForms();
+      }
+      
+      forms.forEach((form, index) => {
+        this.createWidget(form, apiUrl, theme, index);
+      });
+    },
+
+    detectForms: function() {
+      const allForms = Array.from(document.querySelectorAll('form'));
+      
+      return allForms.filter(form => {
+        const fields = this.getFormFields(form);
+        return fields.length >= 2; // Only forms with at least 2 fillable fields
+      });
+    },
+
+    getFormFields: function(form) {
+      return Array.from(form.querySelectorAll('input, textarea, select')).filter(field => {
+        const type = field.type.toLowerCase();
+        return !field.disabled && !field.readOnly && 
+               type !== 'submit' && type !== 'button' && type !== 'reset' && 
+               type !== 'hidden' && type !== 'image' && type !== 'file';
+      }).map(field => ({
+        id: field.id || field.name || `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: field.name,
+        label: this.getFieldLabel(field),
+        type: field.type,
+        element: field
+      }));
+    },
+
+    getFieldLabel: function(field) {
+      // Try to find label by various methods
+      if (field.labels && field.labels.length > 0) {
+        return field.labels[0].innerText.trim();
+      }
+      
+      // Look for label with for attribute
+      if (field.id) {
+        const label = document.querySelector(`label[for="${field.id}"]`);
+        if (label) return label.innerText.trim();
+      }
+      
+      // Look for placeholder
+      if (field.placeholder) {
+        return field.placeholder;
+      }
+      
+      // Look for aria-label
+      if (field.getAttribute('aria-label')) {
+        return field.getAttribute('aria-label');
+      }
+      
+      // Look for parent label
+      const parentLabel = field.closest('label');
+      if (parentLabel) {
+        return parentLabel.innerText.replace(field.value, '').trim();
+      }
+      
+      // Fallback to field name or id
+      return field.name || field.id || 'Campo';
     },
 
     injectCSS: function() {
@@ -183,74 +251,81 @@
       document.head.appendChild(style);
     },
 
-    createWidget: function(formId, apiUrl, theme) {
+    createWidget: function(form, apiUrl, theme, index = 0) {
+      const widgetId = `scribe-ai-widget-${index}`;
+      const toggleId = `scribe-ai-toggle-${index}`;
+      
       // Remove existing widget if any
-      const existing = document.getElementById('scribe-ai-widget');
+      const existing = document.getElementById(widgetId);
       if (existing) existing.remove();
+      
+      const existingToggle = document.getElementById(toggleId);
+      if (existingToggle) existingToggle.remove();
 
       // Create toggle button
       const toggle = document.createElement('button');
+      toggle.id = toggleId;
       toggle.className = 'scribe-ai-toggle';
       toggle.innerHTML = '🤖';
-      toggle.onclick = () => this.toggleWidget();
+      toggle.style.bottom = `${20 + (index * 80)}px`; // Stack multiple toggles
+      toggle.onclick = () => this.toggleWidget(widgetId);
       document.body.appendChild(toggle);
 
       // Create widget container
       const widget = document.createElement('div');
-      widget.id = 'scribe-ai-widget';
+      widget.id = widgetId;
       widget.className = 'scribe-ai-widget hidden';
+      widget.style.bottom = `${20 + (index * 80)}px`; // Stack multiple widgets
       document.body.appendChild(widget);
 
       // Initialize widget state
-      this.state = {
+      const state = {
         messages: [],
         isLoading: false,
         formFields: [],
         currentFieldIndex: 0,
         isFormComplete: false,
         userResponses: {},
-        isVisible: false
+        isVisible: false,
+        form: form,
+        widgetId: widgetId
       };
+      
+      // Store state in widget element
+      widget._scribeState = state;
 
       // Initialize widget
-      this.initWidget(formId, apiUrl);
+      this.initWidget(form, apiUrl, widgetId);
     },
 
-    initWidget: function(formId, apiUrl) {
-      const form = document.getElementById(formId);
-      if (!form) {
-        console.error('ScribeAI: Form not found with id:', formId);
-        return;
-      }
+    initWidget: function(form, apiUrl, widgetId) {
+      const widget = document.getElementById(widgetId);
+      if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
 
       // Find form fields
-      const fields = Array.from(form.querySelectorAll('input, textarea, select')).filter(field => {
-        const type = field.type.toLowerCase();
-        return field.id && !field.disabled && !field.readOnly && 
-               type !== 'submit' && type !== 'button' && type !== 'reset' && 
-               type !== 'hidden' && type !== 'image' && type !== 'file';
-      }).map(field => ({
-        id: field.id,
-        name: field.name,
-        label: field.labels && field.labels.length > 0 ? field.labels[0].innerText : field.id,
-        type: field.type,
-      }));
+      const fields = this.getFormFields(form);
 
       if (fields.length === 0) {
         console.warn('ScribeAI: No fillable fields found in form');
         return;
       }
 
-      this.state.formFields = fields;
-      this.renderWidget();
-      this.startConversation(apiUrl);
+      state.formFields = fields;
+      this.renderWidget(widgetId);
+      this.startConversation(apiUrl, widgetId);
     },
 
-    renderWidget: function() {
-      const widget = document.getElementById('scribe-ai-widget');
+    renderWidget: function(widgetId) {
+      const widget = document.getElementById(widgetId);
       if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
 
-      const { messages, isLoading, currentFieldIndex, formFields, isFormComplete } = this.state;
+      const { messages, isLoading, currentFieldIndex, formFields, isFormComplete } = state;
 
       widget.innerHTML = `
         <div class="scribe-ai-header">
@@ -277,12 +352,15 @@
       `;
 
       // Add event listeners
-      this.addEventListeners();
+      this.addEventListeners(widgetId);
     },
 
-    addEventListeners: function() {
-      const widget = document.getElementById('scribe-ai-widget');
+    addEventListeners: function(widgetId) {
+      const widget = document.getElementById(widgetId);
       if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
 
       const input = widget.querySelector('input');
       const sendBtn = widget.querySelector('button');
@@ -290,8 +368,8 @@
 
       if (input) {
         input.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter' && e.target.value.trim() && !this.state.isLoading) {
-            this.sendMessage(e.target.value.trim());
+          if (e.key === 'Enter' && e.target.value.trim() && !state.isLoading) {
+            this.sendMessage(e.target.value.trim(), widgetId);
             e.target.value = '';
           }
         });
@@ -300,28 +378,37 @@
       if (sendBtn) {
         sendBtn.addEventListener('click', () => {
           const input = widget.querySelector('input');
-          if (input && input.value.trim() && !this.state.isLoading) {
-            this.sendMessage(input.value.trim());
+          if (input && input.value.trim() && !state.isLoading) {
+            this.sendMessage(input.value.trim(), widgetId);
             input.value = '';
           }
         });
       }
 
       if (submitBtn) {
-        submitBtn.addEventListener('click', () => this.submitForm());
+        submitBtn.addEventListener('click', () => this.submitForm(widgetId));
       }
     },
 
-    toggleWidget: function() {
-      const widget = document.getElementById('scribe-ai-widget');
+    toggleWidget: function(widgetId) {
+      const widget = document.getElementById(widgetId);
       if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
 
-      this.state.isVisible = !this.state.isVisible;
-      widget.classList.toggle('hidden', !this.state.isVisible);
+      state.isVisible = !state.isVisible;
+      widget.classList.toggle('hidden', !state.isVisible);
     },
 
-    startConversation: function(apiUrl) {
-      const { formFields } = this.state;
+    startConversation: function(apiUrl, widgetId) {
+      const widget = document.getElementById(widgetId);
+      if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
+      
+      const { formFields } = state;
       if (formFields.length === 0) return;
 
       const firstField = formFields[0];
@@ -339,18 +426,24 @@ REGRAS:
 
 INÍCIO: Pergunte sobre "${firstField.label}"`;
 
-      this.callAPI(apiUrl, systemPrompt, null, null);
+      this.callAPI(apiUrl, systemPrompt, null, null, widgetId);
     },
 
-    sendMessage: function(message) {
+    sendMessage: function(message, widgetId) {
       if (!message.trim()) return;
+      
+      const widget = document.getElementById(widgetId);
+      if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
 
-      const { formFields, currentFieldIndex } = this.state;
+      const { formFields, currentFieldIndex } = state;
       
       // Add user message
-      this.state.messages.push({ sender: 'user', text: message });
-      this.state.isLoading = true;
-      this.renderWidget();
+      state.messages.push({ sender: 'user', text: message });
+      state.isLoading = true;
+      this.renderWidget(widgetId);
 
       const prompt = `Você é o Scribe AI, assistente para preenchimento de formulários.
 
@@ -370,10 +463,16 @@ REGRAS:
         totalFields: formFields.length
       };
 
-      this.callAPI('/api/chat', prompt, context, message);
+      this.callAPI('/api/chat', prompt, context, message, widgetId);
     },
 
-    callAPI: function(apiUrl, prompt, context, userMessage) {
+    callAPI: function(apiUrl, prompt, context, userMessage, widgetId) {
+      const widget = document.getElementById(widgetId);
+      if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
+      
       const payload = { prompt };
       if (context) payload.context = context;
       if (userMessage) payload.userMessage = userMessage;
@@ -385,46 +484,46 @@ REGRAS:
       })
       .then(response => response.json())
       .then(data => {
-        this.state.isLoading = false;
+        state.isLoading = false;
         
         if (data.text) {
-          this.state.messages.push({ sender: 'assistant', text: data.text });
+          state.messages.push({ sender: 'assistant', text: data.text });
           
           if (userMessage) {
             // Store response and fill form
-            const currentField = this.state.formFields[this.state.currentFieldIndex];
-            this.state.userResponses[currentField.id] = userMessage;
-            this.fillFormField(currentField.id, userMessage);
+            const currentField = state.formFields[state.currentFieldIndex];
+            state.userResponses[currentField.id] = userMessage;
+            this.fillFormField(currentField, userMessage);
             
             // Move to next field
-            if (this.state.currentFieldIndex < this.state.formFields.length - 1) {
-              this.state.currentFieldIndex++;
+            if (state.currentFieldIndex < state.formFields.length - 1) {
+              state.currentFieldIndex++;
             } else {
-              this.state.isFormComplete = true;
+              state.isFormComplete = true;
             }
           }
         } else {
-          this.state.messages.push({ 
+          state.messages.push({ 
             sender: 'assistant', 
             text: 'Desculpe, ocorreu um erro ao processar sua resposta.' 
           });
         }
         
-        this.renderWidget();
+        this.renderWidget(widgetId);
       })
       .catch(error => {
         console.error('ScribeAI API Error:', error);
-        this.state.isLoading = false;
-        this.state.messages.push({ 
+        state.isLoading = false;
+        state.messages.push({ 
           sender: 'assistant', 
           text: 'Desculpe, ocorreu um erro ao processar sua resposta.' 
         });
-        this.renderWidget();
+        this.renderWidget(widgetId);
       });
     },
 
-    fillFormField: function(fieldId, value) {
-      const field = document.getElementById(fieldId);
+    fillFormField: function(fieldData, value) {
+      const field = fieldData.element;
       if (field) {
         field.value = value;
         field.dispatchEvent(new Event('change', { bubbles: true }));
@@ -432,8 +531,14 @@ REGRAS:
       }
     },
 
-    submitForm: function() {
-      const form = document.getElementById(this.config?.formId);
+    submitForm: function(widgetId) {
+      const widget = document.getElementById(widgetId);
+      if (!widget) return;
+      
+      const state = widget._scribeState;
+      if (!state) return;
+      
+      const form = state.form;
       if (form) {
         const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
         const submitted = form.dispatchEvent(submitEvent);
@@ -445,17 +550,31 @@ REGRAS:
     }
   };
 
-  // Auto-initialize if data attributes are present
-  document.addEventListener('DOMContentLoaded', function() {
-    const script = document.currentScript || document.querySelector('script[src*="scribe-ai.js"]');
-    if (script) {
-      const formId = script.getAttribute('data-form-id');
+  // Auto-initialize
+  function initializeScribeAI() {
+    const scripts = document.querySelectorAll('script[src*="scribe-ai.js"]');
+    
+    scripts.forEach(script => {
       const apiUrl = script.getAttribute('data-api-url') || '/api/chat';
+      const formId = script.getAttribute('data-form-id'); // Optional specific form
       
-      if (formId) {
-        ScribeAI.init({ formId, apiUrl });
+      try {
+        ScribeAI.init({ 
+          apiUrl, 
+          targetForm: formId || null // If no form specified, auto-detect all forms
+        });
+      } catch (error) {
+        console.error('ScribeAI initialization error:', error);
       }
-    }
-  });
+    });
+  }
+
+  // Try to initialize immediately if DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeScribeAI);
+  } else {
+    // DOM is already ready, initialize immediately
+    initializeScribeAI();
+  }
 
 })(); 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Múltiplos Formulários</title>
+</head>
+<body>
+    <h1>Teste com Múltiplos Formulários</h1>
+    
+    <h2>Formulário de Contato</h2>
+    <form id="contato">
+        <div>
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required>
+        </div>
+        
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div>
+            <label for="mensagem">Mensagem:</label>
+            <textarea id="mensagem" name="mensagem" rows="4"></textarea>
+        </div>
+        
+        <button type="submit">Enviar Contato</button>
+    </form>
+
+    <h2>Formulário de Cadastro</h2>
+    <form id="cadastro">
+        <div>
+            <label for="usuario">Nome de Usuário:</label>
+            <input type="text" id="usuario" name="usuario" required>
+        </div>
+        
+        <div>
+            <label for="email2">Email:</label>
+            <input type="email" id="email2" name="email2" required>
+        </div>
+        
+        <div>
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha" required>
+        </div>
+        
+        <div>
+            <label for="telefone">Telefone:</label>
+            <input type="tel" id="telefone" name="telefone">
+        </div>
+        
+        <button type="submit">Cadastrar</button>
+    </form>
+
+    <h2>Formulário Simples (Ignorado - só 1 campo)</h2>
+    <form id="simples">
+        <div>
+            <label for="busca">Buscar:</label>
+            <input type="text" id="busca" name="busca">
+        </div>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <!-- Script do Scribe AI - Detecta automaticamente todos os formulários válidos -->
+    <script src="./scribe-ai.js"></script>
+</body>
+</html>
